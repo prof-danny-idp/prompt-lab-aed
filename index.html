@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Lab — Análise Econômica do Direito com IA</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- React -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0C0E12;
+      --bg-secondary: #13161C;
+      --bg-card: #181B23;
+      --bg-card-hover: #1E222C;
+      --bg-input: #10131A;
+      --bg-elevated: #20242E;
+      --border: #252A35;
+      --border-focus: #D97706;
+      --text-primary: #E8E6E3;
+      --text-secondary: #8B8D93;
+      --text-muted: #55575E;
+      --accent: #D97706;
+      --accent-dim: rgba(217, 119, 6, 0.15);
+      --accent-hover: #E5A00D;
+      --success: #10B981;
+      --danger: #EF4444;
+      --info: #3B82F6;
+      --gpt: #10B981;
+      --gemini: #3B82F6;
+      --qwen: #8B5CF6;
+      --deepseek: #EF4444;
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
+      --font-mono: 'DM Mono', 'Courier New', monospace;
+      --radius: 8px;
+      --radius-lg: 8px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.4);
+      --overlay: rgba(0, 0, 0, 0.68);
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #F7F5F1;
+      --bg-secondary: #EDE9E1;
+      --bg-card: #FFFFFF;
+      --bg-card-hover: #F3F0EA;
+      --bg-input: #FBFAF7;
+      --bg-elevated: #FFFFFF;
+      --border: #D8D2C7;
+      --border-focus: #B45309;
+      --text-primary: #1F2328;
+      --text-secondary: #525866;
+      --text-muted: #7B8190;
+      --accent: #B45309;
+      --accent-dim: rgba(180, 83, 9, 0.13);
+      --accent-hover: #92400E;
+      --shadow: 0 8px 24px rgba(36, 28, 18, 0.12);
+      --overlay: rgba(21, 18, 15, 0.42);
+    }
+
+    html { font-size: 15px; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .fade-in { animation: fadeIn 0.5s ease-out both; }
+    .slide-up { animation: slideUp 0.6s ease-out both; }
+
+    /* Grain overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Layout */
+    .app-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    .header {
+      padding: 40px 0 32px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+    .header-top {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .header h1 {
+      font-family: var(--font-display);
+      font-size: 2.6rem;
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: 1;
+      color: var(--text-primary);
+    }
+    .header h1 em {
+      color: var(--accent);
+      font-style: italic;
+    }
+    .header-sub {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0;
+      text-transform: uppercase;
+      margin-top: 10px;
+    }
+    .header-nav {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .header-nav button {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .header-nav button:hover { border-color: var(--text-muted); color: var(--text-primary); }
+    .header-nav button.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .theme-toggle {
+      width: 40px;
+      height: 36px;
+      padding: 0;
+      justify-content: center;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+    .card-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* Forms */
+    .input, .textarea, .select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.93rem;
+      padding: 12px 16px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .input:focus, .textarea:focus, .select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+    .textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+    .select { cursor: pointer; appearance: none; }
+
+    .label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 12px 28px;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(217,119,6,0.3); }
+    .btn-primary:disabled { opacity: 0.4; pointer-events: none; }
+    .btn-secondary {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+    .btn-secondary:hover { border-color: var(--text-muted); color: var(--text-primary); }
+    .btn-sm { padding: 8px 16px; font-size: 0.8rem; }
+
+    /* Grid layouts */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    @media (max-width: 1200px) { .grid-5 { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) {
+      .grid-2, .grid-3, .grid-5 { grid-template-columns: 1fr; }
+      .header h1 { font-size: 1.8rem; }
+    }
+
+    /* Response cards */
+    .response-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: border-color 0.3s;
+      cursor: pointer;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+    }
+    .response-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow);
+    }
+    .response-card-header {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .model-badge {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .response-card-body {
+      padding: 16px;
+      font-size: 0.88rem;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      max-height: 220px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      flex: 1;
+    }
+    .response-card-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: auto;
+    }
+    .response-preview-hint {
+      padding: 0 16px 12px;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: var(--accent);
+      text-align: right;
+      line-height: 1;
+    }
+    .stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-input);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-card) 0%, var(--bg-card-hover) 50%, var(--bg-card) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--radius);
+      height: 16px;
+      margin-bottom: 8px;
+    }
+
+    /* Charts container */
+    .charts-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 24px;
+    }
+    @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+    .chart-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+    .chart-box canvas { max-height: 220px; }
+
+    /* Datacenter map */
+    .dc-map {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .dc-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      flex: 1;
+      min-width: 200px;
+    }
+    .dc-flag { font-size: 1.6rem; }
+    .dc-info-name {
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    .dc-info-loc {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* History */
+    .history-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .history-item:hover { border-color: var(--accent); }
+    .history-prompt {
+      font-size: 0.88rem;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    .history-meta {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 16px;
+    }
+
+    /* Status bar */
+    .status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      z-index: 100;
+    }
+
+    /* Dashboard styles */
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      text-align: center;
+    }
+    .stat-card-value {
+      font-family: var(--font-display);
+      font-size: 2.4rem;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .stat-card-label {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    .table-wrapper { overflow-x: auto; }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .data-table th {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+    .data-table tr:hover td { color: var(--text-primary); background: var(--bg-card-hover); }
+
+    .mb-8 { margin-bottom: 8px; }
+    .mb-16 { margin-bottom: 16px; }
+    .mb-24 { margin-bottom: 24px; }
+    .mb-32 { margin-bottom: 32px; }
+    .mt-16 { margin-top: 16px; }
+    .mt-24 { margin-top: 24px; }
+    .gap-16 { gap: 16px; }
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .text-center { text-align: center; }
+    .text-accent { color: var(--accent); }
+    .text-muted { color: var(--text-muted); }
+    .text-mono { font-family: var(--font-mono); }
+
+    /* Login screen */
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .login-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 48px;
+      width: 100%;
+      max-width: 480px;
+      animation: fadeIn 0.6s ease-out;
+    }
+    .login-box h1 {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      margin-bottom: 4px;
+    }
+    .login-box h1 em { color: var(--accent); font-style: italic; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 60px;
+      right: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      z-index: 200;
+      animation: slideUp 0.3s ease-out;
+      box-shadow: var(--shadow);
+    }
+    .toast.error { border-color: var(--danger); }
+    .toast.success { border-color: var(--success); }
+
+    .padded-bottom { padding-bottom: 60px; }
+
+    /* Expand/collapse response */
+    .response-card-body.collapsed {
+      max-height: 200px;
+      overflow: hidden;
+      position: relative;
+    }
+    .response-card-body.collapsed::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(transparent, var(--bg-card));
+    }
+    .expand-btn {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      cursor: pointer;
+      padding: 4px 0;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    /* Result modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: var(--overlay);
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .result-modal {
+      width: min(1040px, 100%);
+      max-height: min(860px, calc(100vh - 64px));
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.38);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 0.22s ease-out both;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+    .modal-close {
+      width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+    .modal-close:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .modal-body {
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .modal-response {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      line-height: 1.75;
+      color: var(--text-primary);
+      font-size: 0.98rem;
+    }
+    .modal-section-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      color: var(--text-muted);
+      margin: 18px 0 8px;
+    }
+    .modal-meta {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: var(--bg-card);
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    /* Reasoning (CoT) section in response card */
+    .reasoning-block {
+      background: rgba(139, 92, 246, 0.06);
+      border-bottom: 1px solid var(--border);
+      border-left: 2px solid #8B5CF6;
+      padding: 10px 16px;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.6;
+      color: #B6A6E0;
+    }
+    .reasoning-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      color: #8B5CF6;
+      margin-bottom: 8px;
+    }
+    .reasoning-body {
+      max-height: 240px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      opacity: 0.85;
+    }
+    .reasoning-body.collapsed { display: none; }
+    .reasoning-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      font-size: 0.72rem;
+    }
+    .reasoning-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(139, 92, 246, 0.18);
+      color: #B6A6E0;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0;
+    }
+
+    /* Toggle pills (CoT, Segurança, Método AED) */
+    .toggle-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .toggle-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .toggle-pill:hover { border-color: var(--text-muted); color: var(--text-primary); }
+    .toggle-pill.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .toggle-pill.cot.active {
+      background: rgba(139, 92, 246, 0.18);
+      border-color: #8B5CF6;
+      color: #B6A6E0;
+    }
+    .toggle-pill input { display: none; }
+    .effort-select {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 6px 12px;
+      cursor: pointer;
+      outline: none;
+    }
+    .effort-select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Prompt library */
+    .lib-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .lib-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      text-align: left;
+      font-family: var(--font-body);
+    }
+    .lib-card:hover { border-color: var(--accent); }
+    .lib-card-title {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    .lib-card-eixo {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .lib-card-meta {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Stress-test child card */
+    .child-response {
+      margin-top: 12px;
+      border-left: 2px solid #8B5CF6;
+      padding-left: 12px;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .child-loading {
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 8px 0;
+    }
+
+    @media (max-width: 768px) {
+      .modal-backdrop { padding: 10px; align-items: stretch; }
+      .result-modal { max-height: calc(100vh - 20px); }
+      .modal-body { padding: 16px; }
+      .status-bar { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="env.js"></script>
+  <script src="config.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // ============================================================
+    // SUPABASE CLIENT
+    // ============================================================
+    let supabaseClient = null;
+    try {
+      if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY &&
+          !CONFIG.SUPABASE_URL.includes('SEU-PROJETO') &&
+          !CONFIG.SUPABASE_URL.includes('seu-projeto') &&
+          !CONFIG.SUPABASE_ANON_KEY.includes('sua-anon')) {
+        supabaseClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+      }
+    } catch (e) {
+      console.warn('Supabase não configurado:', e);
+    }
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function calcCost(model, tokensIn, tokensOut) {
+      const costIn = (tokensIn / 1_000_000) * model.costIn;
+      const costOut = (tokensOut / 1_000_000) * model.costOut;
+      return { costIn, costOut, total: costIn + costOut };
+    }
+
+    function formatCost(v) {
+      if (v < 0.0001) return '< $0.0001';
+      if (v < 0.01) return '$' + v.toFixed(4);
+      return '$' + v.toFixed(4);
+    }
+
+    function truncate(s, n) {
+      if (!s) return '';
+      return s.length > n ? s.slice(0, n) + '…' : s;
+    }
+
+    function cssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    // ============================================================
+    // PROMPTS INTEGRADOS DO EBOOK (toggles)
+    // ============================================================
+    const SAFETY_PROMPT = `Antes de responder:
+1) Remova/mascare dados pessoais e sigilosos (LGPD/segredo de justiça).
+2) Não invente leis, precedentes ou números.
+3) Separe: (a) fatos das fontes, (b) inferências, (c) sugestões.
+4) No final, inclua: premissas, lacunas e o que devo checar em fonte oficial.
+
+`;
+
+    const AED_METHOD_PROMPT = `Aplique o método AED em 7 passos à pergunta abaixo:
+1. Defina o problema jurídico e o contrafactual.
+2. Identifique agentes e mapeie incentivos.
+3. Descreva mecanismo causal e possíveis teorias de dano.
+4. Avalie efeitos diretos, indiretos e sistêmicos.
+5. Considere custos de transação e viabilidade institucional.
+6. Compare alternativas e explicite trade-offs.
+7. Realize stress test crítico (premissas frágeis, hipóteses alternativas, dados faltantes).
+
+Finalize com: conclusão provisória, grau de risco, grau de incerteza e dados empíricos necessários para robustez.
+
+Pergunta:
+`;
+
+    const STRESS_TEST_PROMPT = `Realize um stress test crítico da análise abaixo (que você acabou de produzir):
+
+1. Premissas frágeis — Quais hipóteses podem estar erradas?
+2. Contrafactual alternativo plausível — Existe cenário consistente que leve a conclusão oposta?
+3. Evidência insuficiente — Que dados seriam indispensáveis?
+4. Hipótese alternativa robusta — Existe interpretação igualmente plausível?
+5. Efeitos dinâmicos ignorados — Impactos de longo prazo não considerados?
+6. Risco de erro institucional — Erro tipo I (falso positivo) ou tipo II (falso negativo)?
+7. Reavaliação final — A conclusão deve ser mantida, ajustada ou tornada condicional? Classifique grau de robustez (alto/moderado/baixo) e grau de incerteza.
+
+Análise a ser criticada:
+`;
+
+    // ============================================================
+    // BIBLIOTECA DE PROMPTS DO EBOOK (inline — funciona em file://)
+    // ============================================================
+    const PROMPT_LIBRARY = {
+      referencia: "Resende, G.M. — AED com IA Generativa: um manual prático de prompts (2026)",
+      prompts: [
+        {
+          titulo: "Método AED 7 passos (prompt-síntese)",
+          eixo: "meta",
+          referencia_ebook: "Prompt 74 (cap. 18.8) — prompt-síntese do livro",
+          prompt: `Atue como especialista em Análise Econômica do Direito. Analise o caso abaixo aplicando o método AED de forma estruturada:
+
+1. Defina o problema jurídico e o contrafactual.
+2. Identifique agentes e mapeie incentivos.
+3. Descreva mecanismo causal e possíveis teorias de dano.
+4. Avalie efeitos diretos, indiretos e sistêmicos.
+5. Considere custos de transação e viabilidade institucional.
+6. Compare alternativas e explicite trade-offs.
+7. Realize stress test crítico (premissas frágeis, hipóteses alternativas, dados faltantes).
+
+Finalize com:
+- Conclusão provisória;
+- Grau de risco;
+- Grau de incerteza;
+- Dados empíricos necessários para robustez.
+
+Caso:
+[Descreva aqui o caso concreto — ex.: cláusula contratual, decisão judicial, norma regulatória]`,
+          temperature: 0.5,
+          reasoning_effort: "high",
+          objetivo_pedagogico: "Forçar o modelo a percorrer explicitamente as 7 etapas do método AED. Com CoT ativado, o aluno observa onde o modelo hesita, pula etapas ou mistura contrafactual com consequência.",
+          falha_esperada_ia: "Modelos tendem a sumarizar o contrafactual (passo 1) de forma superficial, misturar incentivos com consequências (passos 3 e 4) e omitir o stress test (passo 7) quando não explicitamente cobrado."
+        },
+        {
+          titulo: "Cláusula de exclusividade — Shopping Center",
+          eixo: "contratos",
+          referencia_ebook: "Caso 1 (cap. 7.2) + Prompt 40 (cap. 10.6)",
+          prompt: `Aplique o método AED em 7 passos ao seguinte caso:
+
+Uma empresa celebra contrato com cláusula de exclusividade territorial. O parceiro alega que a cláusula limita sua liberdade econômica e reduz concorrência local. No caso, a empresa é um shopping center, o raio da exclusividade é pequeno (não vai além do bairro) e o prazo da exclusividade é de dois anos.
+
+1. Delimite o problema e o contrafactual;
+2. Identifique agentes;
+3. Mapeie incentivos (atenção a hold-up, free riding e investimento específico);
+4. Avalie efeitos (concorrência local × investimento em atração de âncoras);
+5. Considere custos de transação (monitoramento, enforcement);
+6. Compare alternativas (manutenção integral, redução do raio, redução do prazo, nulidade);
+7. Realize teste de robustez.`,
+          temperature: 0.6,
+          reasoning_effort: "high",
+          objetivo_pedagogico: "Demonstrar a tensão entre proteção de investimento específico (justificativa econômica para exclusividade) e restrição concorrencial. Ilustrar como o raio e o prazo são variáveis de calibragem.",
+          falha_esperada_ia: "Modelos frequentemente tratam exclusividade como sempre anticoncorrencial, ignorando hold-up e o investimento específico do shopping. Tendem a importar precedentes antitruste dos EUA sem filtro brasileiro (CADE)."
+        },
+        {
+          titulo: "Responsabilidade civil — Dano ambiental e prevenção ótima",
+          eixo: "responsabilidade",
+          referencia_ebook: "Prompt 46 (cap. 11.7) + Caso 2 (cap. 7.3)",
+          prompt: `Analise o caso abaixo sob a perspectiva da prevenção ótima (Calabresi/Shavell):
+
+Uma empresa é responsabilizada por dano ambiental decorrente de atividade de risco. A indenização fixada equivale a 10× o dano direto mensurado, sob fundamento de função punitivo-pedagógica.
+
+1. Identifique o custo provável de precaução;
+2. Estime o dano esperado (probabilidade × magnitude);
+3. Avalie se a indenização proposta gera under-deterrence ou over-deterrence;
+4. Identifique possíveis efeitos sistêmicos (prêmio de risco, custo de capital, retração de atividade, mercado de seguros);
+5. Simule o cenário alternativo com indenização = dano direto × 2 e probabilidade de detecção de 30%;
+6. Compare efeitos entre os cenários;
+7. Indique o grau de incerteza da análise e quais dados empíricos seriam necessários para validação.`,
+          temperature: 0.5,
+          reasoning_effort: "high",
+          objetivo_pedagogico: "Ensinar que deterrence é função de probabilidade × severidade (p·S), não apenas severidade. Com CoT ativo, o aluno vê o modelo calculando (ou deixando de calcular) o valor esperado da sanção.",
+          falha_esperada_ia: "Modelos sem CoT frequentemente erram aritmética básica (ex.: o multiplicador adequado quando detecção=30% não é 1/0,30). O erro vai mascarado por linguagem fluida quando o reasoning não está exposto."
+        },
+        {
+          titulo: "Teorema de Coase em contexto brasileiro (altos custos de transação)",
+          eixo: "coase",
+          referencia_ebook: "Capítulo 12 — Propriedade, externalidades e Coase",
+          prompt: `Aplique o Teorema de Coase ao seguinte cenário e avalie criticamente sua aplicabilidade:
+
+Dois vizinhos em um condomínio residencial de São Paulo disputam o uso de uma área comum — um deseja instalar um playground infantil, o outro alega que o ruído desvaloriza seu imóvel.
+
+Análise exigida:
+1. Sob Coase puro (custos de transação zero), qual seria a alocação eficiente?
+2. Mapeie TODOS os custos de transação reais neste contexto brasileiro: custas judiciais, honorários advocatícios, tempo médio de tramitação no TJSP, custo de perícia acústica, custo psíquico de litigar com vizinho, assimetria informacional sobre laudos técnicos.
+3. Com esses custos de transação, o resultado eficiente ainda é alcançável por negociação privada? Por quê?
+4. Qual é o papel do Direito (regra condominial, decisão judicial, mediação obrigatória) na redução desses custos?
+5. Compare com o mesmo caso em jurisdição com tribunais rápidos e baratos — os incentivos mudam?
+
+Seja específico sobre valores e prazos brasileiros. Se não souber um dado específico, explicite a incerteza.`,
+          temperature: 0.6,
+          reasoning_effort: "high",
+          objetivo_pedagogico: "Expor como a aplicação ingênua do Teorema de Coase (TC ≈ 0) ignora a realidade institucional brasileira. Mesma teoria, recomendações diferentes a depender do ambiente institucional.",
+          falha_esperada_ia: "Modelos tendem a: (a) apresentar Coase de forma genérica, sem aterrar em dados brasileiros; (b) chutar valores de custo/prazo judicial sem sinalizar incerteza; (c) omitir a diferença entre mercado real × ideal."
+        },
+        {
+          titulo: "Stress test — autocrítica estrutural",
+          eixo: "meta",
+          referencia_ebook: "Prompt 72 (cap. 18.2) — também alimenta o botão 'Stress test' da plataforma",
+          prompt: `Realize um stress test crítico da análise AED que você acabou de produzir (ou da análise a seguir, se for submetida).
+
+1. Premissas frágeis — Quais hipóteses podem estar erradas? Há suposição implícita não demonstrada?
+2. Contrafactual alternativo plausível — Existe cenário consistente que leve a conclusão oposta?
+3. Evidência insuficiente — Que dados seriam indispensáveis? Há inferência puramente teórica apresentada como fato?
+4. Hipótese alternativa robusta — Existe interpretação pró-eficiência igualmente plausível?
+5. Efeitos dinâmicos ignorados — Impactos de longo prazo não considerados?
+6. Risco de erro institucional (falha de governo) — Erro tipo I (falso positivo) ou tipo II (falso negativo)?
+7. Reavaliação final — A conclusão deve ser mantida, ajustada ou tornada condicional? Classifique o grau final de robustez (alto/moderado/baixo) e o grau de incerteza.
+
+Análise a ser criticada:
+[cole aqui a análise que o modelo acabou de produzir, ou deixe em branco para autocrítica da última resposta]`,
+          temperature: 0.7,
+          reasoning_effort: "high",
+          objetivo_pedagogico: "Combater o viés de confirmação dos modelos. Demonstrar que IA aplicada com método exige tensionamento, não confirmação.",
+          falha_esperada_ia: "Modelos frequentemente produzem 'stress tests' cosméticos, concordando com a análise original e listando objeções fracas. Compare: quem realmente desafia × quem encena desafio."
+        }
+      ]
+    };
+
+    const EIXOS = [
+      { value: '', label: '— Eixo —' },
+      { value: 'meta', label: 'Meta (método/autocrítica)' },
+      { value: 'contratos', label: 'Contratos' },
+      { value: 'responsabilidade', label: 'Responsabilidade civil' },
+      { value: 'coase', label: 'Propriedade / Coase' },
+      { value: 'crime', label: 'Direito penal' },
+      { value: 'regulacao', label: 'Regulação' },
+      { value: 'antitruste', label: 'Antitruste' },
+      { value: 'comportamental', label: 'Comportamental' }
+    ];
+
+    function buildEffectivePrompt(rawPrompt, safetyOn, methodOn) {
+      let body = rawPrompt;
+      if (methodOn) body = AED_METHOD_PROMPT + body;
+      if (safetyOn) body = SAFETY_PROMPT + body;
+      return body;
+    }
+
+    // ============================================================
+    // OPENROUTER API CALL
+    // ============================================================
+    async function callModel(model, prompt, systemPrompt, temperature, maxTokens, opts = {}) {
+      const start = performance.now();
+      const messages = [];
+      if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+      messages.push({ role: 'user', content: prompt });
+
+      const reasoningOn = !!opts.reasoningEnabled && model.supportsReasoning;
+      const reasoningEffort = opts.reasoningEffort || 'medium';
+
+      const body = {
+        model: model.id,
+        messages,
+        temperature,
+        max_tokens: maxTokens
+      };
+      if (reasoningOn) {
+        body.reasoning = { effort: reasoningEffort };
+      }
+
+      try {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${CONFIG.OPENROUTER_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': window.location.href,
+            'X-Title': 'Prompt Lab - AED com IA'
+          },
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+        const elapsed = Math.round(performance.now() - start);
+
+        if (data.error) {
+          return { model, error: data.error.message || JSON.stringify(data.error), elapsed };
+        }
+
+        const msg = data.choices?.[0]?.message || {};
+        const text = msg.content || '';
+        let reasoning = msg.reasoning || null;
+        if (!reasoning && Array.isArray(msg.reasoning_details) && msg.reasoning_details.length > 0) {
+          reasoning = msg.reasoning_details
+            .map(d => d.text || d.summary || d.content || '')
+            .filter(Boolean)
+            .join('\n\n');
+        }
+        const reasoningTokens =
+          data.usage?.reasoning_tokens ||
+          data.usage?.completion_tokens_details?.reasoning_tokens ||
+          0;
+
+        const tokIn = data.usage?.prompt_tokens || 0;
+        const tokOut = data.usage?.completion_tokens || 0;
+        const cost = calcCost(model, tokIn, tokOut);
+
+        return {
+          model,
+          text,
+          reasoning,
+          reasoningTokens,
+          reasoningEffort: reasoningOn ? reasoningEffort : null,
+          tokensIn: tokIn,
+          tokensOut: tokOut,
+          costIn: cost.costIn,
+          costOut: cost.costOut,
+          costTotal: cost.total,
+          elapsed,
+          error: null
+        };
+      } catch (err) {
+        return {
+          model,
+          error: err.message || 'Erro de rede',
+          elapsed: Math.round(performance.now() - start)
+        };
+      }
+    }
+
+    // ============================================================
+    // SUPABASE OPS
+    // ============================================================
+    async function dbSaveSession(name) {
+      if (!supabaseClient) return null;
+      const { data, error } = await supabaseClient.from('sessions').insert({ name }).select().single();
+      return error ? null : data;
+    }
+    async function dbGetOrCreateSession(name) {
+      if (!supabaseClient) return null;
+      const { data: existing } = await supabaseClient.from('sessions')
+        .select('*')
+        .eq('name', name)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existing) return existing;
+      return dbSaveSession(name);
+    }
+    async function dbSaveStudent(name) {
+      if (!supabaseClient) return null;
+      const { data, error } = await supabaseClient.from('students').insert({ name }).select().single();
+      return error ? null : data;
+    }
+    async function dbGetOrCreateStudent(name) {
+      if (!supabaseClient) return null;
+      const { data: existing } = await supabaseClient.from('students')
+        .select('*')
+        .eq('name', name)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existing) return existing;
+      return dbSaveStudent(name);
+    }
+    async function dbSavePrompt(sessionId, studentId, promptText, systemPrompt, temperature, maxTokens, meta = {}) {
+      if (!supabaseClient) return null;
+      const { data, error } = await supabaseClient.from('prompts').insert({
+        session_id: sessionId,
+        student_id: studentId,
+        prompt_text: promptText,
+        system_prompt: systemPrompt || null,
+        temperature,
+        max_tokens: maxTokens,
+        thinking_enabled: !!meta.thinkingEnabled,
+        reasoning_effort: meta.reasoningEffort || 'medium',
+        safety_prompt_applied: !!meta.safetyApplied,
+        aed_method_applied: !!meta.aedMethodApplied,
+        prompt_eixo: meta.eixo || null,
+        parent_prompt_id: meta.parentPromptId || null
+      }).select().single();
+      return error ? null : data;
+    }
+    async function dbSaveResponse(promptId, r) {
+      if (!supabaseClient) return;
+      await supabaseClient.from('responses').insert({
+        prompt_id: promptId,
+        model_id: r.model.id,
+        model_name: r.model.name,
+        response_text: r.text || null,
+        reasoning_text: r.reasoning || null,
+        reasoning_tokens: r.reasoningTokens || 0,
+        reasoning_effort: r.reasoningEffort || null,
+        tokens_input: r.tokensIn || 0,
+        tokens_output: r.tokensOut || 0,
+        cost_input: r.costIn || 0,
+        cost_output: r.costOut || 0,
+        cost_total: r.costTotal || 0,
+        response_time_ms: r.elapsed,
+        datacenter_location: r.model.datacenter,
+        datacenter_country: r.model.country,
+        provider: r.model.provider,
+        error_message: r.error || null
+      });
+    }
+    async function dbGetSessions() {
+      if (!supabaseClient) return [];
+      const { data } = await supabaseClient.from('sessions').select('*').order('created_at', { ascending: false });
+      return data || [];
+    }
+    async function dbGetDashboard() {
+      if (!supabaseClient) return { sessions: [], modelSummary: [], students: [], reasoning: [] };
+      const [s, m, st, rc] = await Promise.all([
+        supabaseClient.from('session_costs').select('*'),
+        supabaseClient.from('model_summary').select('*'),
+        supabaseClient.from('student_usage').select('*'),
+        supabaseClient.from('reasoning_comparison').select('*')
+      ]);
+      return {
+        sessions: s.data || [],
+        modelSummary: m.data || [],
+        students: st.data || [],
+        reasoning: rc.data || []
+      };
+    }
+    async function dbGetHistory() {
+      if (!supabaseClient) return [];
+      const { data } = await supabaseClient.from('full_history').select('*').limit(200);
+      return data || [];
+    }
+
+    // ============================================================
+    // TOAST COMPONENT
+    // ============================================================
+    function Toast({ message, type, onClose }) {
+      useEffect(() => {
+        const t = setTimeout(onClose, 4000);
+        return () => clearTimeout(t);
+      }, []);
+      return <div className={`toast ${type}`}>{message}</div>;
+    }
+
+    function ThemeToggle({ theme, onToggle }) {
+      return (
+        <button className="btn btn-secondary theme-toggle" onClick={onToggle}
+          title={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+          aria-label={theme === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}>
+          {theme === 'dark' ? '☀' : '☾'}
+        </button>
+      );
+    }
+
+    // ============================================================
+    // LOGIN SCREEN
+    // ============================================================
+    function LoginScreen({ onLogin, theme, onThemeToggle }) {
+      const [name, setName] = useState('');
+
+      const handleSubmit = () => {
+        if (!name.trim()) return;
+        onLogin(name.trim());
+      };
+
+      return (
+        <div className="login-container">
+          <div className="login-box">
+            <div className="flex justify-between items-center mb-16">
+              <h1>Prompt <em>Lab</em></h1>
+              <ThemeToggle theme={theme} onToggle={onThemeToggle} />
+            </div>
+            <p className="text-mono text-muted" style={{ fontSize: '0.72rem', letterSpacing: 0, marginBottom: 32 }}>
+              ANÁLISE ECONÔMICA DO DIREITO COM IA
+            </p>
+
+            <label className="label">Seu nome</label>
+            <input className="input mb-24" value={name} onChange={e => setName(e.target.value)}
+              placeholder="João Silva" autoFocus />
+
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}
+              onClick={handleSubmit} disabled={!name.trim()}>
+              Entrar no Lab
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // RESPONSE CARD
+    // ============================================================
+    function ResultModal({ result, onClose, onStressTest, stressChild, stressLoading }) {
+      const [reasoningOpen, setReasoningOpen] = useState(true);
+      const { model } = result;
+      const hasReasoning = !!result.reasoning && result.reasoning.trim().length > 0;
+      const supportsReasoning = !!model.supportsReasoning;
+
+      useEffect(() => {
+        const onKey = (e) => {
+          if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [onClose]);
+
+      return (
+        <div className="modal-backdrop" onClick={onClose}>
+          <div className="result-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <div className="flex items-center gap-16 flex-wrap">
+                <span className="model-badge" style={{ background: model.color + '22', color: model.color }}>
+                  {model.flag} {model.name}
+                </span>
+                <span className="text-mono text-muted" style={{ fontSize: '0.72rem' }}>{model.provider} · {model.tier}</span>
+              </div>
+              <button className="modal-close" onClick={onClose} aria-label="Fechar">×</button>
+            </div>
+
+            <div className="modal-body">
+              {result.error ? (
+                <div className="modal-response" style={{ color: 'var(--danger)' }}>Erro: {result.error}</div>
+              ) : (
+                <>
+                  {(hasReasoning || supportsReasoning) && (
+                    <div className="reasoning-block" style={{ border: '1px solid var(--border)', borderLeft: '2px solid #8B5CF6', borderRadius: 'var(--radius)', marginBottom: 16 }}>
+                      <div className="reasoning-header" onClick={() => setReasoningOpen(o => !o)}>
+                        <span>🧠 Raciocínio do modelo {hasReasoning && <span className="reasoning-badge">+{result.reasoningTokens || '?'} tok</span>}</span>
+                        <span>{reasoningOpen ? '▲' : '▼'}</span>
+                      </div>
+                      {hasReasoning ? (
+                        <div className={`reasoning-body ${reasoningOpen ? '' : 'collapsed'}`}>{result.reasoning}</div>
+                      ) : (
+                        <div className={`reasoning-body ${reasoningOpen ? '' : 'collapsed'}`}>
+                          <span className="reasoning-empty">Modelo suporta raciocínio, mas o toggle 🧠 estava desativado neste prompt.</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="modal-section-title">Resposta</div>
+                  <div className="modal-response">{result.text}</div>
+
+                  {(stressChild || stressLoading) && (
+                    <>
+                      <div className="modal-section-title">Stress test (mesmo modelo)</div>
+                      {stressLoading ? (
+                        <div className="child-loading">⏳ Pedindo autocrítica ao modelo…</div>
+                      ) : stressChild.error ? (
+                        <div className="child-response" style={{ color: 'var(--danger)' }}>Erro: {stressChild.error}</div>
+                      ) : (
+                        <div className="child-response" style={{ maxHeight: 'none' }}>{stressChild.text}</div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="modal-meta">
+              <span className="stat-pill">⏱ {(result.elapsed / 1000).toFixed(1)}s</span>
+              <span className="stat-pill">↓ {result.tokensIn || '—'} tok</span>
+              <span className="stat-pill">↑ {result.tokensOut || '—'} tok</span>
+              {hasReasoning && <span className="stat-pill">🧠 {result.reasoningTokens || '?'}</span>}
+              <span className="stat-pill">💰 {result.costTotal != null ? formatCost(result.costTotal) : '—'}</span>
+              <span className="stat-pill">{model.flag} {model.datacenter}</span>
+              {!result.error && onStressTest && !stressChild && !stressLoading && (
+                <button className="expand-btn" style={{ marginLeft: 'auto' }} onClick={onStressTest}>
+                  🔁 Stress test
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ResponseCard({ result, index, onStressTest, stressChild, stressLoading }) {
+      const [modalOpen, setModalOpen] = useState(false);
+
+      if (!result) return (
+        <div className="response-card fade-in" style={{ animationDelay: `${index * 0.1}s`, cursor: 'default' }}>
+          <div className="response-card-header">
+            <span className="model-badge" style={{ background: 'var(--bg-input)', color: 'var(--text-muted)' }}>
+              {CONFIG.MODELS[index]?.name}
+            </span>
+          </div>
+          <div className="response-card-body" style={{ padding: 24 }}>
+            <div className="skeleton" style={{ width: '90%' }} />
+            <div className="skeleton" style={{ width: '75%' }} />
+            <div className="skeleton" style={{ width: '85%' }} />
+            <div className="skeleton" style={{ width: '60%' }} />
+          </div>
+        </div>
+      );
+
+      const { model } = result;
+      const hasReasoning = !!result.reasoning && result.reasoning.trim().length > 0;
+      const preview = result.error ? `Erro: ${result.error}` : truncate(result.text, 620);
+
+      const openModal = () => setModalOpen(true);
+
+      return (
+        <>
+          <div className="response-card fade-in" role="button" tabIndex={0}
+            onClick={openModal}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openModal(); }}
+            style={{ animationDelay: `${index * 0.1}s`, borderTopColor: model.color, borderTopWidth: 2 }}>
+            <div className="response-card-header">
+              <span className="model-badge" style={{ background: model.color + '22', color: model.color }}>
+                {model.flag} {model.name}
+              </span>
+              <span className="text-mono text-muted" style={{ fontSize: '0.65rem' }}>{model.tier}</span>
+            </div>
+
+            <div className="response-card-body">
+              {result.error ? (
+                <span style={{ color: 'var(--danger)' }}>{preview}</span>
+              ) : preview}
+            </div>
+
+            <div className="response-preview-hint" aria-hidden="true">↗</div>
+
+            <div className="response-card-footer">
+              <span className="stat-pill">⏱ {(result.elapsed / 1000).toFixed(1)}s</span>
+              <span className="stat-pill">↓ {result.tokensIn || '—'} tok</span>
+              <span className="stat-pill">↑ {result.tokensOut || '—'} tok</span>
+              {hasReasoning && <span className="stat-pill">🧠 {result.reasoningTokens || '?'}</span>}
+              <span className="stat-pill">💰 {result.costTotal != null ? formatCost(result.costTotal) : '—'}</span>
+              {!result.error && onStressTest && !stressChild && !stressLoading && (
+                <button className="expand-btn" style={{ marginLeft: 'auto' }} onClick={(e) => { e.stopPropagation(); setModalOpen(true); onStressTest(); }}>
+                  🔁 Stress test
+                </button>
+              )}
+            </div>
+          </div>
+
+          {modalOpen && (
+            <ResultModal result={result}
+              onClose={() => setModalOpen(false)}
+              onStressTest={onStressTest}
+              stressChild={stressChild}
+              stressLoading={stressLoading} />
+          )}
+        </>
+      );
+    }
+
+    // ============================================================
+    // COMPARISON CHARTS
+    // ============================================================
+    function ComparisonCharts({ results, theme }) {
+      const costRef = useRef(null);
+      const tokenRef = useRef(null);
+      const timeRef = useRef(null);
+      const charts = useRef([]);
+
+      useEffect(() => {
+        charts.current.forEach(c => c?.destroy());
+        charts.current = [];
+
+        if (!results || results.length === 0) return;
+
+        const labels = results.map(r => r.model.name);
+        const colors = results.map(r => r.model.color);
+        const chartText = cssVar('--text-muted');
+        const chartGrid = cssVar('--border') + '66';
+
+        // Cost chart
+        if (costRef.current) {
+          charts.current.push(new Chart(costRef.current, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [{
+                label: 'Custo (USD)',
+                data: results.map(r => r.costTotal || 0),
+                backgroundColor: colors.map(c => c + '88'),
+                borderColor: colors,
+                borderWidth: 1,
+                borderRadius: 4
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                title: { display: true, text: 'Custo por Modelo', color: chartText, font: { family: 'DM Mono', size: 11 } },
+                legend: { display: false }
+              },
+              scales: {
+                y: { grid: { color: chartGrid }, ticks: { color: chartText, font: { family: 'DM Mono', size: 10 }, callback: v => '$' + v.toFixed(4) } },
+                x: { grid: { display: false }, ticks: { color: chartText, font: { family: 'DM Mono', size: 9 }, maxRotation: 45 } }
+              }
+            }
+          }));
+        }
+
+        // Tokens chart
+        if (tokenRef.current) {
+          charts.current.push(new Chart(tokenRef.current, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: 'Input',
+                  data: results.map(r => r.tokensIn || 0),
+                  backgroundColor: '#3B82F644',
+                  borderColor: '#3B82F6',
+                  borderWidth: 1,
+                  borderRadius: 4
+                },
+                {
+                  label: 'Output',
+                  data: results.map(r => r.tokensOut || 0),
+                  backgroundColor: '#10B98144',
+                  borderColor: '#10B981',
+                  borderWidth: 1,
+                  borderRadius: 4
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                title: { display: true, text: 'Tokens por Modelo', color: chartText, font: { family: 'DM Mono', size: 11 } },
+                legend: { labels: { color: chartText, font: { family: 'DM Mono', size: 10 } } }
+              },
+              scales: {
+                y: { grid: { color: chartGrid }, ticks: { color: chartText, font: { family: 'DM Mono', size: 10 } } },
+                x: { grid: { display: false }, ticks: { color: chartText, font: { family: 'DM Mono', size: 9 }, maxRotation: 45 } }
+              }
+            }
+          }));
+        }
+
+        // Time chart
+        if (timeRef.current) {
+          charts.current.push(new Chart(timeRef.current, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [{
+                label: 'Tempo (s)',
+                data: results.map(r => (r.elapsed || 0) / 1000),
+                backgroundColor: colors.map(c => c + '88'),
+                borderColor: colors,
+                borderWidth: 1,
+                borderRadius: 4
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                title: { display: true, text: 'Tempo de Resposta', color: chartText, font: { family: 'DM Mono', size: 11 } },
+                legend: { display: false }
+              },
+              scales: {
+                y: { grid: { color: chartGrid }, ticks: { color: chartText, font: { family: 'DM Mono', size: 10 }, callback: v => v.toFixed(1) + 's' } },
+                x: { grid: { display: false }, ticks: { color: chartText, font: { family: 'DM Mono', size: 9 }, maxRotation: 45 } }
+              }
+            }
+          }));
+        }
+
+        return () => charts.current.forEach(c => c?.destroy());
+      }, [results, theme]);
+
+      return (
+        <div className="charts-row">
+          <div className="chart-box"><canvas ref={costRef} /></div>
+          <div className="chart-box"><canvas ref={tokenRef} /></div>
+          <div className="chart-box"><canvas ref={timeRef} /></div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // DATACENTER MAP
+    // ============================================================
+    function DatacenterMap() {
+      return (
+        <div className="dc-map">
+          {CONFIG.MODELS.map(m => (
+            <div className="dc-item" key={m.id} style={{ borderLeftColor: m.color, borderLeftWidth: 3 }}>
+              <span className="dc-flag">{m.flag}</span>
+              <div>
+                <div className="dc-info-name" style={{ color: m.color }}>{m.name}</div>
+                <div className="dc-info-loc">{m.datacenter}</div>
+                <div className="dc-info-loc">{m.provider}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // PROMPT INPUT AREA
+    // ============================================================
+    function PromptInput({ onSubmit, loading }) {
+      const [prompt, setPrompt] = useState('');
+      const [systemPrompt, setSystemPrompt] = useState('');
+      const [temperature, setTemperature] = useState(0.7);
+      const [maxTokens, setMaxTokens] = useState(2048);
+      const [showAdvanced, setShowAdvanced] = useState(false);
+      const [reasoningEnabled, setReasoningEnabled] = useState(true);
+      const [reasoningEffort, setReasoningEffort] = useState('medium');
+      const [safetyOn, setSafetyOn] = useState(false);
+      const [methodOn, setMethodOn] = useState(false);
+      const [eixo, setEixo] = useState('');
+      const library = PROMPT_LIBRARY;
+      const [showLibrary, setShowLibrary] = useState(false);
+
+      const handleSubmit = () => {
+        if (!prompt.trim() || loading) return;
+        onSubmit({
+          rawPrompt: prompt.trim(),
+          systemPrompt: systemPrompt.trim(),
+          temperature,
+          maxTokens,
+          reasoningEnabled,
+          reasoningEffort,
+          safetyOn,
+          methodOn,
+          eixo
+        });
+      };
+
+      const loadFromLibrary = (p) => {
+        setPrompt(p.prompt);
+        if (p.temperature != null) setTemperature(p.temperature);
+        if (p.reasoning_effort) {
+          setReasoningEffort(p.reasoning_effort);
+          setReasoningEnabled(true);
+        }
+        if (p.eixo) setEixo(p.eixo);
+        if (p.system_prompt) setSystemPrompt(p.system_prompt);
+        setShowLibrary(false);
+      };
+
+      return (
+        <div className="card mb-24 slide-up">
+          <div className="card-title">Prompt</div>
+
+          <textarea className="textarea mb-16" value={prompt} onChange={e => setPrompt(e.target.value)}
+            placeholder="Digite seu prompt aqui ou escolha um da biblioteca AED abaixo..." rows={5}
+            onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) handleSubmit(); }} />
+
+          {/* Toggles do ebook */}
+          <div className="toggle-row">
+            <label className={`toggle-pill cot ${reasoningEnabled ? 'active' : ''}`}>
+              <input type="checkbox" checked={reasoningEnabled}
+                onChange={e => setReasoningEnabled(e.target.checked)} />
+              🧠 Mostrar raciocínio (CoT)
+            </label>
+            <select className="effort-select" value={reasoningEffort}
+              onChange={e => setReasoningEffort(e.target.value)} disabled={!reasoningEnabled}>
+              <option value="low">Esforço baixo</option>
+              <option value="medium">Esforço médio</option>
+              <option value="high">Esforço alto</option>
+            </select>
+            <label className={`toggle-pill ${safetyOn ? 'active' : ''}`}
+              title="Prompt 23 do ebook — anti-alucinação, LGPD, separar fato/inferência/sugestão">
+              <input type="checkbox" checked={safetyOn} onChange={e => setSafetyOn(e.target.checked)} />
+              🛡️ Prompt de segurança
+            </label>
+            <label className={`toggle-pill ${methodOn ? 'active' : ''}`}
+              title="Prompt 74 do ebook — força a resposta em 7 passos canônicos da AED">
+              <input type="checkbox" checked={methodOn} onChange={e => setMethodOn(e.target.checked)} />
+              📐 Método AED 7 passos
+            </label>
+            <select className="effort-select" value={eixo} onChange={e => setEixo(e.target.value)}
+              title="Classifica este prompt por eixo temático (persistido no Supabase)">
+              {EIXOS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+
+          <div className="flex justify-between items-center flex-wrap gap-16 mb-16">
+            <div className="flex gap-16 items-center flex-wrap">
+              <div>
+                <label className="label">Temperature: {temperature}</label>
+                <input type="range" min="0" max="1" step="0.1" value={temperature}
+                  onChange={e => setTemperature(parseFloat(e.target.value))}
+                  style={{ width: 140, accentColor: 'var(--accent)' }} />
+              </div>
+              <div>
+                <label className="label">Max tokens</label>
+                <select className="input" style={{ width: 100, padding: '8px 12px' }}
+                  value={maxTokens} onChange={e => setMaxTokens(parseInt(e.target.value))}>
+                  <option value={256}>256</option>
+                  <option value={512}>512</option>
+                  <option value={1024}>1024</option>
+                  <option value={2048}>2048</option>
+                  <option value={4096}>4096</option>
+                </select>
+              </div>
+              <button className="btn btn-sm btn-secondary" onClick={() => setShowAdvanced(!showAdvanced)}>
+                {showAdvanced ? '▲ Menos' : '▼ System Prompt'}
+              </button>
+              <button className="btn btn-sm btn-secondary" onClick={() => setShowLibrary(!showLibrary)}>
+                {showLibrary ? '▲ Esconder biblioteca' : '📚 Biblioteca AED do ebook'}
+              </button>
+            </div>
+
+            <button className="btn btn-primary" onClick={handleSubmit} disabled={!prompt.trim() || loading}>
+              {loading ? '⏳ Processando...' : '⚡ Enviar para 5 modelos'}
+            </button>
+          </div>
+
+          {showAdvanced && (
+            <div className="mb-16 fade-in">
+              <label className="label">System Prompt (opcional)</label>
+              <textarea className="textarea" value={systemPrompt} onChange={e => setSystemPrompt(e.target.value)}
+                placeholder="Ex: Você é um professor de Direito especializado em Análise Econômica do Direito. Responda de forma didática."
+                rows={2} />
+            </div>
+          )}
+
+          {showLibrary && library && (
+            <div className="fade-in">
+              <div className="text-mono text-muted" style={{ fontSize: '0.7rem', marginBottom: 4 }}>
+                {library.referencia || 'Biblioteca AED'} — clique em um card para carregar o prompt
+              </div>
+              <div className="lib-grid">
+                {(library.prompts || []).map((p, i) => (
+                  <button key={i} className="lib-card" onClick={() => loadFromLibrary(p)}>
+                    <span className="lib-card-eixo">{p.eixo}</span>
+                    <div className="lib-card-title">{p.titulo}</div>
+                    <div className="lib-card-meta">{p.referencia_ebook}</div>
+                    {p.objetivo_pedagogico && (
+                      <div className="lib-card-meta" style={{ marginTop: 6, color: 'var(--text-secondary)' }}>
+                        {truncate(p.objetivo_pedagogico, 140)}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // DASHBOARD SCREEN
+    // ============================================================
+    function DashboardScreen() {
+      const [data, setData] = useState(null);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        (async () => {
+          const d = await dbGetDashboard();
+          setData(d);
+          setLoading(false);
+        })();
+      }, []);
+
+      if (loading) return <div className="text-center mt-24 text-muted">Carregando dashboard...</div>;
+      if (!data || !supabaseClient) return (
+        <div className="card text-center mt-24">
+          <p className="text-muted">Supabase não configurado. Configure SUPABASE_URL e SUPABASE_ANON_KEY no env.js ou nos GitHub Secrets.</p>
+        </div>
+      );
+
+      const totalCost = data.sessions.reduce((s, r) => s + parseFloat(r.total_cost_usd || 0), 0);
+      const totalPrompts = data.sessions.reduce((s, r) => s + parseInt(r.total_prompts || 0), 0);
+      const totalResponses = data.sessions.reduce((s, r) => s + parseInt(r.total_responses || 0), 0);
+
+      return (
+        <div className="fade-in padded-bottom">
+          <div className="grid-3 mb-32" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+            <div className="stat-card">
+              <div className="stat-card-value">{data.sessions.length}</div>
+              <div className="stat-card-label">Sessões</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-value">{totalPrompts}</div>
+              <div className="stat-card-label">Prompts</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-value">{data.students.length}</div>
+              <div className="stat-card-label">Alunos</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-value text-accent">{formatCost(totalCost)}</div>
+              <div className="stat-card-label">Custo total</div>
+            </div>
+          </div>
+
+          <div className="grid-2 mb-32">
+            <div className="card">
+              <div className="card-title">Custo por Modelo (acumulado)</div>
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Modelo</th>
+                      <th>Respostas</th>
+                      <th>Avg In</th>
+                      <th>Avg Out</th>
+                      <th>Avg ms</th>
+                      <th>Custo total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.modelSummary.map(r => (
+                      <tr key={r.model_name}>
+                        <td style={{ fontWeight: 600 }}>{r.model_name}</td>
+                        <td>{r.total_responses}</td>
+                        <td>{r.avg_tokens_in}</td>
+                        <td>{r.avg_tokens_out}</td>
+                        <td>{r.avg_time_ms}ms</td>
+                        <td className="text-accent">${parseFloat(r.total_cost).toFixed(4)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-title">Custo por sessão</div>
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Sessão</th>
+                      <th>Prompts</th>
+                      <th>Respostas</th>
+                      <th>Custo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.sessions.map(r => (
+                      <tr key={r.session_name + r.session_date}>
+                        <td style={{ fontWeight: 600 }}>{r.session_name}</td>
+                        <td>{r.total_prompts}</td>
+                        <td>{r.total_responses}</td>
+                        <td className="text-accent">${parseFloat(r.total_cost_usd).toFixed(4)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="card mb-32">
+            <div className="card-title">Raciocínio (CoT) por modelo — quanto cada um "pensa"</div>
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Modelo</th>
+                    <th>Com CoT</th>
+                    <th>Sem CoT</th>
+                    <th>Tokens médios CoT</th>
+                    <th>Chars médios CoT</th>
+                    <th>Chars médios resposta</th>
+                    <th>Razão CoT/resposta</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.reasoning || []).map(r => (
+                    <tr key={r.model_name}>
+                      <td style={{ fontWeight: 600 }}>{r.model_name}</td>
+                      <td className="text-mono">{r.with_cot}</td>
+                      <td className="text-mono text-muted">{r.without_cot}</td>
+                      <td className="text-mono">{r.avg_reasoning_tokens || '—'}</td>
+                      <td className="text-mono">{r.avg_reasoning_chars || '—'}</td>
+                      <td className="text-mono">{r.avg_answer_chars || '—'}</td>
+                      <td className="text-accent text-mono">{r.reasoning_ratio != null ? r.reasoning_ratio : '—'}</td>
+                    </tr>
+                  ))}
+                  {(!data.reasoning || data.reasoning.length === 0) && (
+                    <tr><td colSpan={7} className="text-center text-muted">
+                      Sem dados de CoT ainda — habilite o toggle 🧠 e rode um prompt para popular esta visão.
+                    </td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="card mb-32">
+            <div className="card-title">Uso por Aluno</div>
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Prompts</th>
+                    <th>Respostas</th>
+                    <th>Custo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.students.map(r => (
+                    <tr key={r.student_name}>
+                      <td style={{ fontWeight: 600 }}>{r.student_name}</td>
+                      <td>{r.total_prompts}</td>
+                      <td>{r.total_responses}</td>
+                      <td className="text-accent">${parseFloat(r.total_cost_usd).toFixed(4)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex gap-16">
+            <button className="btn btn-secondary" onClick={async () => {
+              const hist = await dbGetHistory();
+              const csv = [
+                ['Sessão', 'Aluno', 'Prompt', 'Modelo', 'Resposta', 'Tokens In', 'Tokens Out', 'Custo', 'Tempo ms', 'Datacenter', 'Data'].join(','),
+                ...hist.map(r => [
+                  `"${(r.session_name || '').replace(/"/g, '""')}"`,
+                  `"${(r.student_name || '').replace(/"/g, '""')}"`,
+                  `"${(r.prompt_text || '').replace(/"/g, '""')}"`,
+                  `"${r.model_name}"`,
+                  `"${(r.response_text || '').replace(/"/g, '""')}"`,
+                  r.tokens_input,
+                  r.tokens_output,
+                  r.cost_total,
+                  r.response_time_ms,
+                  `"${r.datacenter_location}"`,
+                  r.created_at
+                ].join(','))
+              ].join('\n');
+              const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+              const link = document.createElement('a');
+              link.href = URL.createObjectURL(blob);
+              link.download = `prompt-lab-export-${new Date().toISOString().slice(0,10)}.csv`;
+              link.click();
+            }}>
+              📥 Exportar CSV
+            </button>
+            <button className="btn btn-secondary" onClick={async () => {
+              const hist = await dbGetHistory();
+              const blob = new Blob([JSON.stringify(hist, null, 2)], { type: 'application/json' });
+              const link = document.createElement('a');
+              link.href = URL.createObjectURL(blob);
+              link.download = `prompt-lab-export-${new Date().toISOString().slice(0,10)}.json`;
+              link.click();
+            }}>
+              📥 Exportar JSON
+            </button>
+            {CONFIG.SUPABASE_URL && !CONFIG.SUPABASE_URL.includes('SEU-PROJETO') && !CONFIG.SUPABASE_URL.includes('seu-projeto') && (
+              <a className="btn btn-secondary" href={CONFIG.SUPABASE_URL.replace('.supabase.co', '.supabase.co')}
+                target="_blank" rel="noopener">
+                🔗 Abrir Supabase
+              </a>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
+    // HISTORY SCREEN
+    // ============================================================
+    function HistoryScreen() {
+      const [history, setHistory] = useState([]);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        (async () => {
+          const h = await dbGetHistory();
+          setHistory(h);
+          setLoading(false);
+        })();
+      }, []);
+
+      if (loading) return <div className="text-center mt-24 text-muted">Carregando...</div>;
+      if (!supabaseClient) return <div className="card mt-24 text-center text-muted">Supabase não configurado.</div>;
+
+      // Group by prompt
+      const grouped = {};
+      history.forEach(r => {
+        const key = r.prompt_text + '|' + r.created_at?.slice(0, 19);
+        if (!grouped[key]) grouped[key] = { prompt: r.prompt_text, student: r.student_name, session: r.session_name, date: r.created_at, responses: [] };
+        grouped[key].responses.push(r);
+      });
+
+      return (
+        <div className="fade-in padded-bottom">
+          {Object.values(grouped).map((g, i) => (
+            <div key={i} className="card mb-16">
+              <div className="flex justify-between items-center mb-8">
+                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{truncate(g.prompt, 100)}</span>
+                <span className="text-mono text-muted" style={{ fontSize: '0.65rem' }}>
+                  {g.student} · {g.session} · {new Date(g.date).toLocaleString('pt-BR')}
+                </span>
+              </div>
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Modelo</th>
+                      <th>Resposta (início)</th>
+                      <th>In</th>
+                      <th>Out</th>
+                      <th>Custo</th>
+                      <th>Tempo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {g.responses.map((r, j) => (
+                      <tr key={j}>
+                        <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{r.model_name}</td>
+                        <td style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {truncate(r.response_text, 80)}
+                        </td>
+                        <td className="text-mono">{r.tokens_input}</td>
+                        <td className="text-mono">{r.tokens_output}</td>
+                        <td className="text-accent text-mono">{formatCost(r.cost_total || 0)}</td>
+                        <td className="text-mono">{r.response_time_ms}ms</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+          {Object.keys(grouped).length === 0 && (
+            <div className="card text-center text-muted mt-24">Nenhum registro encontrado.</div>
+          )}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // MAIN APP
+    // ============================================================
+    const DEFAULT_SESSION_NAME = 'Laboratório AED com IA';
+
+    function App() {
+      const [screen, setScreen] = useState('login');
+      const [user, setUser] = useState(null);
+      const [sessionId, setSessionId] = useState(null);
+      const [studentId, setStudentId] = useState(null);
+      const [sessions, setSessions] = useState([]);
+      const [theme, setTheme] = useState(() => {
+        const saved = localStorage.getItem('prompt-lab-theme');
+        if (saved === 'light' || saved === 'dark') return saved;
+        return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      });
+      const [results, setResults] = useState(null);
+      const [allRounds, setAllRounds] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const [toast, setToast] = useState(null);
+      const [totalCostSession, setTotalCostSession] = useState(0);
+      const [stressChildren, setStressChildren] = useState({}); // index -> {text, error} or null
+      const [stressLoading, setStressLoading] = useState({});   // index -> bool
+      const [lastRound, setLastRound] = useState(null);          // {promptId, opts, system, ...} for stress test
+
+      // Load sessions on mount
+      useEffect(() => {
+        (async () => {
+          const s = await dbGetSessions();
+          setSessions(s);
+        })();
+      }, []);
+
+      useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('prompt-lab-theme', theme);
+      }, [theme]);
+
+      const showToast = (message, type = 'success') => setToast({ message, type });
+      const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
+
+      const handleLogin = async (name) => {
+        // Save student
+        const student = await dbGetOrCreateStudent(name);
+        if (student) setStudentId(student.id);
+
+        // Single lab session: reuse the existing default session when available.
+        const session = sessions.find(s => s.name === DEFAULT_SESSION_NAME) || await dbGetOrCreateSession(DEFAULT_SESSION_NAME);
+        const sid = session?.id || null;
+        if (session && !sessions.some(s => s.id === session.id)) setSessions(prev => [session, ...prev]);
+        setSessionId(sid);
+        setUser({ name });
+        setScreen('lab');
+        showToast(`Bem-vindo, ${name}!`);
+      };
+
+      const handleSubmit = async (opts) => {
+        const { rawPrompt, systemPrompt, temperature, maxTokens, reasoningEnabled, reasoningEffort, safetyOn, methodOn, eixo } = opts;
+        setLoading(true);
+        setResults(Array(CONFIG.MODELS.length).fill(null));
+        setStressChildren({});
+        setStressLoading({});
+
+        const effectivePrompt = buildEffectivePrompt(rawPrompt, safetyOn, methodOn);
+
+        const savedPrompt = await dbSavePrompt(
+          sessionId, studentId, effectivePrompt, systemPrompt, temperature, maxTokens,
+          {
+            thinkingEnabled: reasoningEnabled,
+            reasoningEffort,
+            safetyApplied: safetyOn,
+            aedMethodApplied: methodOn,
+            eixo
+          }
+        );
+
+        const callOpts = { reasoningEnabled, reasoningEffort };
+
+        const promises = CONFIG.MODELS.map((model, i) =>
+          callModel(model, effectivePrompt, systemPrompt, temperature, maxTokens, callOpts).then(async result => {
+            if (savedPrompt) await dbSaveResponse(savedPrompt.id, result);
+            setResults(prev => {
+              const next = [...prev];
+              next[i] = result;
+              return next;
+            });
+            return result;
+          })
+        );
+
+        const allResults = await Promise.all(promises);
+        const roundCost = allResults.reduce((s, r) => s + (r.costTotal || 0), 0);
+        setTotalCostSession(prev => prev + roundCost);
+        setAllRounds(prev => [{ prompt: effectivePrompt, results: allResults, cost: roundCost, time: new Date() }, ...prev]);
+        setLastRound({
+          promptId: savedPrompt?.id || null,
+          systemPrompt,
+          temperature,
+          maxTokens,
+          reasoningEnabled,
+          reasoningEffort,
+          eixo
+        });
+        setLoading(false);
+        showToast(`Rodada completa! Custo: ${formatCost(roundCost)}`);
+      };
+
+      const handleStressTest = async (index) => {
+        const original = results?.[index];
+        if (!original || original.error) return;
+        const model = original.model;
+        setStressLoading(prev => ({ ...prev, [index]: true }));
+
+        const stressPrompt = STRESS_TEST_PROMPT + '\n\n' + (original.text || '');
+        const opts = {
+          reasoningEnabled: lastRound?.reasoningEnabled,
+          reasoningEffort: lastRound?.reasoningEffort || 'high'
+        };
+
+        // Save the stress prompt as a child prompt (parent_prompt_id linked) so analytics can find it
+        const childPrompt = await dbSavePrompt(
+          sessionId, studentId, stressPrompt, lastRound?.systemPrompt || '',
+          lastRound?.temperature ?? 0.7, lastRound?.maxTokens ?? 2048,
+          {
+            thinkingEnabled: opts.reasoningEnabled,
+            reasoningEffort: opts.reasoningEffort,
+            safetyApplied: false,
+            aedMethodApplied: false,
+            eixo: 'meta',
+            parentPromptId: lastRound?.promptId || null
+          }
+        );
+
+        const child = await callModel(
+          model, stressPrompt, lastRound?.systemPrompt || '',
+          lastRound?.temperature ?? 0.7, lastRound?.maxTokens ?? 2048, opts
+        );
+
+        if (childPrompt) await dbSaveResponse(childPrompt.id, child);
+
+        setStressChildren(prev => ({ ...prev, [index]: child }));
+        setStressLoading(prev => ({ ...prev, [index]: false }));
+        setTotalCostSession(prev => prev + (child.costTotal || 0));
+        showToast(`Stress test (${model.name}) concluído.`);
+      };
+
+      // Check if OpenRouter key is configured
+      const keyConfigured = CONFIG.OPENROUTER_KEY && !CONFIG.OPENROUTER_KEY.includes('TROCAR') && !CONFIG.OPENROUTER_KEY.includes('sua-chave');
+      const dbConfigured = supabaseClient != null;
+
+      if (screen === 'login') {
+        return <LoginScreen onLogin={handleLogin} theme={theme} onThemeToggle={toggleTheme} />;
+      }
+
+      return (
+        <div className="app-container padded-bottom">
+          {/* Header */}
+          <header className="header fade-in">
+            <div className="header-top">
+              <div>
+                <h1>Prompt <em>Lab</em></h1>
+                <div className="header-sub">Análise Econômica do Direito com IA</div>
+              </div>
+              <div className="header-nav">
+                <button className={screen === 'lab' ? 'active' : ''} onClick={() => setScreen('lab')}>Lab</button>
+                <button className={screen === 'dashboard' ? 'active' : ''} onClick={() => setScreen('dashboard')}>Dashboard</button>
+                <button className={screen === 'history' ? 'active' : ''} onClick={() => setScreen('history')}>Histórico</button>
+                <ThemeToggle theme={theme} onToggle={toggleTheme} />
+                <button onClick={() => { setScreen('login'); setUser(null); }}>Sair</button>
+              </div>
+            </div>
+          </header>
+
+          {/* Warnings */}
+          {!keyConfigured && (
+            <div className="card mb-24" style={{ borderColor: 'var(--danger)', background: 'var(--bg-card)' }}>
+              <p style={{ color: 'var(--danger)', fontWeight: 600, marginBottom: 4 }}>⚠️ API Key não configurada</p>
+              <p className="text-muted" style={{ fontSize: '0.85rem' }}>
+                Configure OPENROUTER_KEY no env.js local ou nos GitHub Secrets usados pelo deploy.
+              </p>
+            </div>
+          )}
+          {!dbConfigured && (
+            <div className="card mb-24" style={{ borderColor: 'var(--accent)', background: 'var(--bg-card)' }}>
+              <p style={{ color: 'var(--accent)', fontWeight: 600, marginBottom: 4 }}>⚠️ Supabase não configurado</p>
+              <p className="text-muted" style={{ fontSize: '0.85rem' }}>
+                Os dados não estão sendo salvos. Configure SUPABASE_URL e SUPABASE_ANON_KEY no env.js local ou nos GitHub Secrets.
+              </p>
+            </div>
+          )}
+
+          {/* Lab Screen */}
+          {screen === 'lab' && (
+            <>
+              <PromptInput onSubmit={handleSubmit} loading={loading} />
+
+              {results && (
+                <>
+                  <div className="grid-5 mb-24">
+                    {CONFIG.MODELS.map((m, i) => (
+                      <ResponseCard key={m.id} result={results[i]} index={i}
+                        onStressTest={() => handleStressTest(i)}
+                        stressChild={stressChildren[i]}
+                        stressLoading={!!stressLoading[i]} />
+                    ))}
+                  </div>
+
+                  {results.every(r => r !== null) && (
+                    <>
+                      <ComparisonCharts results={results.filter(r => r && !r.error)} theme={theme} />
+
+                      <div className="card mt-24 mb-24">
+                        <div className="card-title">Localização dos Datacenters</div>
+                        <DatacenterMap />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              {/* Round history */}
+              {allRounds.length > 0 && (
+                <div className="card mt-24">
+                  <div className="card-title">Rodadas desta sessão ({allRounds.length})</div>
+                  {allRounds.map((round, i) => (
+                    <div key={i} className="history-item">
+                      <div className="history-prompt">{truncate(round.prompt, 120)}</div>
+                      <div className="history-meta">
+                        <span>💰 {formatCost(round.cost)}</span>
+                        <span>🕐 {round.time.toLocaleTimeString('pt-BR')}</span>
+                        <span>{round.results.filter(r => !r.error).length}/5 sucesso</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Dashboard Screen */}
+          {screen === 'dashboard' && <DashboardScreen />}
+
+          {/* History Screen */}
+          {screen === 'history' && <HistoryScreen />}
+
+          {/* Status bar */}
+          <div className="status-bar">
+            <span>
+              {user?.name}
+              {' · '}
+              {dbConfigured ? '🟢 BD conectado' : '🔴 BD offline'}
+              {' · '}
+              {keyConfigured ? '🟢 API OK' : '🔴 API não configurada'}
+            </span>
+            <span>
+              Sessão: {formatCost(totalCostSession)} · {allRounds.length} rodadas
+            </span>
+          </div>
+
+          {/* Toast */}
+          {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        </div>
+      );
+    }
+
+    // ============================================================
+    // RENDER
+    // ============================================================
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

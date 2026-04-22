@@ -1,0 +1,100 @@
+{
+  "curso": "Análise Econômica do Direito com IA",
+  "referencia": "Resende, G.M. — Análise Econômica do Direito (AED) com Inteligência Artificial (IA) Generativa: um manual prático de prompts (2026)",
+  "metodo_aed_7_passos": [
+    "problema + contrafactual",
+    "agentes",
+    "incentivos",
+    "consequências",
+    "custos de transação",
+    "trade-offs",
+    "verificação"
+  ],
+  "toggles_da_plataforma": {
+    "prompt_seguranca": "Prompt 23 do ebook — prepend que reduz alucinações (LGPD, não inventar leis/precedentes, separar fato/inferência/sugestão)",
+    "metodo_aed_7_passos": "Prompt 74 do ebook (prompt-síntese) — estrutura a resposta nos 7 passos canônicos",
+    "stress_test": "Prompt 72 do ebook — botão em cada resposta que dispara autocrítica estrutural pelo mesmo modelo"
+  },
+  "prompts": [
+    {
+      "titulo": "Método AED 7 passos (prompt-síntese)",
+      "eixo": "meta",
+      "referencia_ebook": "Prompt 74 (cap. 18.8) — prompt-síntese do livro",
+      "prompt": "Atue como especialista em Análise Econômica do Direito. Analise o caso abaixo aplicando o método AED de forma estruturada:\n\n1. Defina o problema jurídico e o contrafactual.\n2. Identifique agentes e mapeie incentivos.\n3. Descreva mecanismo causal e possíveis teorias de dano.\n4. Avalie efeitos diretos, indiretos e sistêmicos.\n5. Considere custos de transação e viabilidade institucional.\n6. Compare alternativas e explicite trade-offs.\n7. Realize stress test crítico (premissas frágeis, hipóteses alternativas, dados faltantes).\n\nFinalize com:\n- Conclusão provisória;\n- Grau de risco;\n- Grau de incerteza;\n- Dados empíricos necessários para robustez.\n\nCaso:\n[Descreva aqui o caso concreto — ex.: cláusula contratual, decisão judicial, norma regulatória]",
+      "system_prompt": null,
+      "temperature": 0.5,
+      "reasoning_effort": "high",
+      "objetivo_pedagogico": "Forçar o modelo a percorrer explicitamente as 7 etapas do método AED. Com CoT ativado, o aluno observa onde o modelo hesita, pula etapas ou mistura contrafactual com consequência.",
+      "falha_esperada_ia": "Modelos tendem a sumariçar o contrafactual (passo 1) de forma superficial, misturar incentivos com consequências (passos 3 e 4) e omitir o stress test (passo 7) quando não explicitamente cobrado.",
+      "checkpoints_verificacao": [
+        "O contrafactual está claramente separado da descrição do problema?",
+        "Os incentivos são mapeados por agente individualmente ou agregados genericamente?",
+        "O stress test apresenta ao menos uma hipótese alternativa concreta?"
+      ]
+    },
+    {
+      "titulo": "Cláusula de exclusividade — Shopping Center",
+      "eixo": "contratos",
+      "referencia_ebook": "Caso 1 (cap. 7.2) + Prompt 40 (cap. 10.6)",
+      "prompt": "Aplique o método AED em 7 passos ao seguinte caso:\n\nUma empresa celebra contrato com cláusula de exclusividade territorial. O parceiro alega que a cláusula limita sua liberdade econômica e reduz concorrência local. No caso, a empresa é um shopping center, o raio da exclusividade é pequeno (não vai além do bairro) e o prazo da exclusividade é de dois anos.\n\n1. Delimite o problema e o contrafactual;\n2. Identifique agentes;\n3. Mapeie incentivos (atenção a hold-up, free riding e investimento específico);\n4. Avalie efeitos (concorrência local × investimento em atração de âncoras);\n5. Considere custos de transação (monitoramento, enforcement);\n6. Compare alternativas (manutenção integral, redução do raio, redução do prazo, nulidade);\n7. Realize teste de robustez.",
+      "system_prompt": null,
+      "temperature": 0.6,
+      "reasoning_effort": "high",
+      "objetivo_pedagogico": "Demonstrar a tensão entre proteção de investimento específico (justificativa econômica para exclusividade) e restrição concorrencial. Ilustrar como o raio e o prazo são variáveis de calibragem.",
+      "falha_esperada_ia": "Modelos frequentemente tratam exclusividade como sempre anticoncorrencial, ignorando o papel de hold-up e a racionalidade do investimento específico do shopping em atrair lojas-âncora. Tendem também a importar precedentes antitruste dos EUA sem filtro brasileiro (CADE).",
+      "checkpoints_verificacao": [
+        "O modelo distingue free riding de hold-up?",
+        "A análise considera contexto brasileiro (CADE, lei 12.529/2011) ou usa precedentes americanos genéricos?",
+        "Há menção a alternativas intermediárias (redução de raio/prazo) ou só binário válido/nulo?"
+      ]
+    },
+    {
+      "titulo": "Responsabilidade civil — Dano ambiental e prevenção ótima",
+      "eixo": "responsabilidade",
+      "referencia_ebook": "Prompt 46 (cap. 11.7) + Caso 2 (cap. 7.3)",
+      "prompt": "Analise o caso abaixo sob a perspectiva da prevenção ótima (Calabresi/Shavell):\n\nUma empresa é responsabilizada por dano ambiental decorrente de atividade de risco. A indenização fixada equivale a 10× o dano direto mensurado, sob fundamento de função punitivo-pedagógica.\n\n1. Identifique o custo provável de precaução;\n2. Estime o dano esperado (probabilidade × magnitude);\n3. Avalie se a indenização proposta gera under-deterrence ou over-deterrence;\n4. Identifique possíveis efeitos sistêmicos (prêmio de risco, custo de capital, retração de atividade, mercado de seguros);\n5. Simule o cenário alternativo com indenização = dano direto × 2 e probabilidade de detecção de 30%;\n6. Compare efeitos entre os cenários;\n7. Indique o grau de incerteza da análise e quais dados empíricos seriam necessários para validação.",
+      "system_prompt": null,
+      "temperature": 0.5,
+      "reasoning_effort": "high",
+      "objetivo_pedagogico": "Ensinar que deterrence é função de probabilidade × severidade (p·S), não apenas severidade. Com CoT ativo, o aluno vê o modelo calculando (ou deixando de calcular) o valor esperado da sanção.",
+      "falha_esperada_ia": "Modelos sem CoT frequentemente erram aritmética básica (ex.: quando a probabilidade é 30%, o multiplicador adequado não é 1/0,30). Sem reasoning exposto, o erro vai mascarado por linguagem fluida. Também costumam ignorar efeitos dinâmicos sobre mercado de seguros.",
+      "checkpoints_verificacao": [
+        "O modelo calcula explicitamente p·S ou apenas afirma qualitativamente?",
+        "Há análise do efeito sobre prêmio de risco / custo de capital?",
+        "O modelo reconhece incerteza sobre a probabilidade de detecção real?"
+      ]
+    },
+    {
+      "titulo": "Teorema de Coase em contexto brasileiro (altos custos de transação)",
+      "eixo": "coase",
+      "referencia_ebook": "Capítulo 12 — Propriedade, externalidades e Coase",
+      "prompt": "Aplique o Teorema de Coase ao seguinte cenário e avalie criticamente sua aplicabilidade:\n\nDois vizinhos em um condomínio residencial de São Paulo disputam o uso de uma área comum — um deseja instalar um playground infantil, o outro alega que o ruído desvaloriza seu imóvel.\n\nAnálise exigida:\n1. Sob Coase puro (custos de transação zero), qual seria a alocação eficiente?\n2. Mapeie TODOS os custos de transação reais neste contexto brasileiro: custas judiciais, honorários advocatícios, tempo médio de tramitação no TJSP, custo de perícia acústica, custo psíquico de litigar com vizinho, assimetria informacional sobre laudos técnicos.\n3. Com esses custos de transação, o resultado eficiente ainda é alcançável por negociação privada? Por quê?\n4. Qual é o papel do Direito (regra condominial, decisão judicial, mediação obrigatória) na redução desses custos?\n5. Compare com o mesmo caso em jurisdição com tribunais rápidos e baratos — os incentivos mudam?\n\nSeja específico sobre valores e prazos brasileiros. Se não souber um dado específico, explicite a incerteza.",
+      "system_prompt": null,
+      "temperature": 0.6,
+      "reasoning_effort": "high",
+      "objetivo_pedagogico": "Expor como a aplicação ingênua do Teorema de Coase (com TC ≈ 0) ignora a realidade institucional brasileira. Mostrar que a mesma teoria produz recomendações diferentes a depender do ambiente institucional.",
+      "falha_esperada_ia": "Modelos tendem a (a) apresentar Coase de forma genérica, sem aterrar em dados brasileiros; (b) chutar valores de custo/prazo judicial sem sinalizar incerteza; (c) omitir a diferença entre mercado real × mercado ideal. DeepSeek R1 (chinês) pode apresentar uma leitura distinta sobre o papel do Estado vs. arranjos privados — vale comparar com Claude/o4-mini.",
+      "checkpoints_verificacao": [
+        "O modelo cita valores de custas/prazos brasileiros? Se sim, checar no CNJ (Justiça em Números) e na tabela de custas do TJSP.",
+        "Há reconhecimento explícito da divergência entre Coase teórico e Coase aplicado no Brasil?",
+        "Comparar a resposta do DeepSeek R1 com Claude e o4-mini: há viés geopolítico sobre o papel do Estado?"
+      ]
+    },
+    {
+      "titulo": "Stress test — autocrítica estrutural",
+      "eixo": "meta",
+      "referencia_ebook": "Prompt 72 (cap. 18.2) — também alimenta o botão 'Stress test' da plataforma",
+      "prompt": "Realize um stress test crítico da análise AED que você acabou de produzir (ou da análise a seguir, se for submetida).\n\n1. Premissas frágeis — Quais hipóteses podem estar erradas? Há suposição implícita não demonstrada?\n2. Contrafactual alternativo plausível — Existe cenário consistente que leve a conclusão oposta?\n3. Evidência insuficiente — Que dados seriam indispensáveis? Há inferência puramente teórica apresentada como fato?\n4. Hipótese alternativa robusta — Existe interpretação pró-eficiência igualmente plausível?\n5. Efeitos dinâmicos ignorados — Impactos de longo prazo não considerados?\n6. Risco de erro institucional (falha de governo) — Erro tipo I (falso positivo) ou tipo II (falso negativo)?\n7. Reavaliação final — A conclusão deve ser mantida, ajustada ou tornada condicional? Classifique o grau final de robustez (alto/moderado/baixo) e o grau de incerteza.\n\nAnálise a ser criticada:\n[cole aqui a análise que o modelo acabou de produzir, ou deixe em branco para autocrítica da última resposta]",
+      "system_prompt": null,
+      "temperature": 0.7,
+      "reasoning_effort": "high",
+      "objetivo_pedagogico": "Combater o viés de confirmação dos modelos (tendência a defender a primeira resposta). Demonstrar que IA aplicada com método exige tensionamento, não confirmação.",
+      "falha_esperada_ia": "Modelos frequentemente produzem 'stress tests' cosméticos, concordando com a análise original e listando objeções fracas. Comparar modelos: quem realmente desafia × quem encena desafio.",
+      "checkpoints_verificacao": [
+        "A hipótese alternativa apresentada é substantiva ou apenas superficial?",
+        "O modelo ajusta a conclusão original ou mantém com defesa retórica?",
+        "O grau final de incerteza declarado é coerente com as fragilidades apontadas?"
+      ]
+    }
+  ]
+}
