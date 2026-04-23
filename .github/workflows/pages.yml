@@ -27,10 +27,22 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          test -n "$OPENROUTER_KEY" || (echo "OPENROUTER_KEY secret is empty" && exit 1)
-          test -n "$SUPABASE_URL" || (echo "SUPABASE_URL secret is empty" && exit 1)
-          test -n "$SUPABASE_ANON_KEY" || (echo "SUPABASE_ANON_KEY secret is empty" && exit 1)
-          node -e "const fs=require('fs'); const env={OPENROUTER_KEY:process.env.OPENROUTER_KEY,SUPABASE_URL:process.env.SUPABASE_URL,SUPABASE_ANON_KEY:process.env.SUPABASE_ANON_KEY}; fs.writeFileSync('env.js', 'window.PROMPT_LAB_ENV = ' + JSON.stringify(env, null, 2) + ';\\n');"
+          node <<'NODE'
+          const fs = require('fs');
+          const clean = (value) => (value || '').trim().replace(/^["']|["']$/g, '');
+          const env = {
+            OPENROUTER_KEY: clean(process.env.OPENROUTER_KEY),
+            SUPABASE_URL: clean(process.env.SUPABASE_URL),
+            SUPABASE_ANON_KEY: clean(process.env.SUPABASE_ANON_KEY)
+          };
+          for (const [key, value] of Object.entries(env)) {
+            if (!value) {
+              console.error(`${key} secret is empty`);
+              process.exit(1);
+            }
+          }
+          fs.writeFileSync('env.js', `window.PROMPT_LAB_ENV = ${JSON.stringify(env, null, 2)};\n`);
+          NODE
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
